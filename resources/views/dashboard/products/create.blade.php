@@ -1,9 +1,23 @@
 @extends('layouts.app')
+@section('header', 'Add Product')
 
 @section('content')
 <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
     <h2 class="text-2xl font-bold mb-6 text-slate-800">Add New Product</h2>
-
+@if ($errors->any())
+    <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+        <ul class="list-disc pl-5">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+@if(session('error'))
+    <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 font-bold">
+        {{ session('error') }}
+    </div>
+@endif
     <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="grid grid-cols-2 gap-4">

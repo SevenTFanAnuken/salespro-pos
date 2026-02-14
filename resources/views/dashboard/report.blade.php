@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('header', 'Business Intelligence Reports')
+@section('header', 'Damage Reports')
 
 @section('content')
 <div class="flex flex-col md:flex-row gap-6">

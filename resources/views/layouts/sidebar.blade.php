@@ -10,7 +10,11 @@
                 <p class="text-[10px] font-bold text-gray-500 uppercase px-4 mb-2 tracking-widest text-purple-400">Management</p>
                 
                 <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-2 rounded-md {{ request()->routeIs('dashboard') ? 'bg-slate-800 text-white' : 'hover:bg-slate-800' }}">
-                    <i data-lucide="home" class="w-5 h-5 mr-3"></i></i> Dashboard
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard
+                </a>
+
+                <a href="{{ route('orders.index') }}" class="flex items-center px-4 py-2 rounded-md {{ request()->routeIs('orders.index') ? 'bg-slate-800 text-white' : 'hover:bg-slate-800' }}">
+                    <i data-lucide="history" class="w-5 h-5 mr-3 text-pink-400"></i> Transactions
                 </a>
 
                 <a href="{{ route('inventory') }}" class="flex items-center px-4 py-2 rounded-md {{ request()->routeIs('inventory') ? 'bg-slate-800 text-white' : 'hover:bg-slate-800' }}">
@@ -24,6 +28,7 @@
                 <a href="{{ route('employees.index') }}" class="flex items-center px-4 py-2 rounded-md {{ request()->routeIs('employees.*') ? 'bg-slate-800 text-white' : 'hover:bg-slate-800' }}">
                     <i data-lucide="users" class="w-5 h-5 mr-3 text-blue-400"></i> Staff List
                 </a>
+
                 <a href="{{ route('reports.index') }}" class="flex items-center px-4 py-2 rounded-md {{ request()->routeIs('reports.*') ? 'bg-slate-800 text-white' : 'hover:bg-slate-800' }}">
                     <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3 text-purple-400"></i> Reports
                 </a>

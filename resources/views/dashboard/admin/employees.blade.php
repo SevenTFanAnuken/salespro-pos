@@ -3,12 +3,6 @@
 
 @section('content')
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-        <h3 class="font-bold text-gray-800">Staff List</h3>
-        <button onclick="openEmployeeModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
-            Add New Employee
-        </button>
-    </div>
     <div class="overflow-x-auto">
         <table class="w-full text-left">
             <thead class="bg-gray-50 text-gray-600 text-xs uppercase">

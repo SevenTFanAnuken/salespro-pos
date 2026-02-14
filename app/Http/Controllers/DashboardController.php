@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sale;
 use App\Models\User;
-use App\Models\Order;
+use App\Models\Expense;
 use App\Models\Product;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
@@ -16,86 +17,89 @@ use Illuminate\Support\Facades\Auth;
 class DashboardController extends Controller
 {
     public function index()
-    {
-        $user = auth::user();
-
-        if ($user->role === 'user') {
-            return redirect()->route('point_of_sale.index');
-        }
-
-        // 1. Calculate Revenue (assuming 'total_amount' column in orders table)
-        $totalRevenue = \App\Models\Order::sum('total_amount');
-
-        // 2. Count Active Users (all registered staff)
-        $activeUsers = \App\Models\User::count();
-
-        // 3. Get Recent Sales
-        $recentSales = \App\Models\Order::latest()->take(5)->get();
-
-        return view('dashboard.admin', compact('totalRevenue', 'activeUsers', 'recentSales'));
+{
+    $user = Auth::user();
+    if ($user->role === 'user') {
+        return redirect()->route('point_of_sale.index');
     }
+
+    $totalSales = Sale::sum('total_amount');
+    $totalExpenses = Expense::sum('amount');
+    $netProfit = $totalSales - $totalExpenses;
+
+    return view('dashboard.admin', [
+        'activeUsers'  => User::count(),
+        'totalProducts' => Product::count(),
+        'totalSales' => $totalSales,
+        'totalExpenses' => $totalExpenses,
+        'netProfit' => $netProfit,
+        'todaySales' => Sale::whereDate('created_at', today())->sum('total_amount')
+    ]);
+}
+
+
 
     public function posIndex()
     {
         return view('dashboard.pos.index');
     }
     public function posStore(Request $request)
-    {
-        // 1. Validate the incoming request
-        $request->validate([
-            'cart_data' => 'required',
-            'payment_type' => 'required'
-        ]);
+{
+    $request->validate([
+        'cart_data' => 'required',
+        'payment_type' => 'required'
+    ]);
 
-        $cartItems = json_decode($request->cart_data, true);
+    $cartItems = json_decode($request->cart_data, true);
 
-        if (empty($cartItems)) {
-            return back()->with('error', 'Your cart is empty!');
+    DB::transaction(function () use ($cartItems, $request) {
+        $totalAmount = 0;
+        foreach ($cartItems as $item) {
+            $totalAmount += (float)$item['price'] * (int)$item['qty'];
         }
 
-        // Use a Database Transaction to ensure everything saves together
-        DB::transaction(function () use ($cartItems, $request) {
+        // 1. Create the Sale (Changed from Order to Sale)
+        $sale = Sale::create([
+            'user_id'         => Auth::id(),
+            'invoice_number'  => 'INV-' . strtoupper(uniqid()), // Generates a unique invoice
+            'total_amount'    => $totalAmount,
+            'final_total'     => $totalAmount, // Usually total after tax/discount
+            'payment_type'    => $request->payment_type,
+        ]);
 
-            // 2. Calculate Total
-            $totalAmount = 0;
-            foreach ($cartItems as $item) {
-                $totalAmount += $item['price'] * $item['qty'];
-            }
-
-            // 3. Create the Main Order
-            $order = Order::create([
-                'user_id' => Auth::id(),
-                'total_amount' => $totalAmount,
-                'paid_amount' => $totalAmount, // Assuming exact pay for now
-                'change_amount' => 0,
-                'payment_method' => $request->payment_type,
+        // 2. Process each item
+        foreach ($cartItems as $item) {
+            // Save Sale Details (so your history page shows items!)
+            $sale->details()->create([
+                'product_id' => $item['id'],
+                'qty'        => $item['qty'],
+                'price'      => $item['price'],
+                'subtotal'   => $item['price'] * $item['qty'],
             ]);
 
-            // 4. Process each item (Update Stock & Log Movement)
-            foreach ($cartItems as $item) {
-                // Log the "Stock Out" for Reports
-                StockMovement::create([
-                    'product_id' => $item['id'],
-                    'user_id' => Auth::id(),
-                    'quantity' => -$item['qty'], // Negative for stock leaving
-                    'type' => 'out',
-                    'notes' => 'POS Sale #' . $order->id
-                ]);
+            // Log Stock Movement
+            StockMovement::create([
+                'product_id' => $item['id'],
+                'user_id'    => Auth::id(),
+                'quantity'   => -$item['qty'],
+                'type'       => 'out',
+                'notes'      => 'POS Sale ' . $sale->invoice_number
+            ]);
 
-                // Subtract from Product Quantity
-                $product = Product::find($item['id']);
-                $product->decrement('qty', $item['qty']);
-            }
-        });
+            // Update Product Quantity
+            Product::find($item['id'])->decrement('qty', $item['qty']);
+        }
+    });
 
-        return back()->with('success', 'Sale recorded and stock updated!');
-    }
+    return back()->with('success', 'Sale recorded and revenue updated!');
+}
 
     public function orders()
-    {
-        // Logic for orders page
-        return view('dashboard.orders');
-    }
+{
+    // Fetch all orders with pagination so the page doesn't get too long
+    $orders = Sale::with('user')->latest()->paginate(15);
+    return view('dashboard.orders', compact('orders'));
+}
 
     public function inventory()
     {

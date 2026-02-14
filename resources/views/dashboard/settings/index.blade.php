@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('header', 'Settings')
 
 @section('content')
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
